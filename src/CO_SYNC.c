@@ -49,7 +49,7 @@
 #include "CO_Emergency.h"
 #include "CO_NMT_Heartbeat.h"
 #include "CO_SYNC.h"
-
+#include "Logger.h"
 /*
  * Read received message from CAN module.
  *
@@ -58,14 +58,46 @@
  * description of parameters see file CO_driver.h.
  */
 static void CO_SYNC_receive(void *object, const CO_CANrxMsg_t *msg){
+
+
+
+    if(LEVEL_1){
+    			 sprintf(logLine,"FILE:CO_SYNC.C||"
+    					 "Call: CO_SYNC_receive"
+    					 "\n, msg:start");
+    			 logPrint(LOG,logLine);}
+
+
     CO_SYNC_t *SYNC;
     uint8_t operState;
 
     SYNC = (CO_SYNC_t*)object;   /* this is the correct pointer type of the first argument */
     operState = *SYNC->operatingState;
 
+
+    if(LEVEL_1){
+    			 sprintf(logLine,"FILE:CO_SYNC.C||"
+    					 "Call: CO_SYNC_receive"
+    					 "\n, msg:begin check for operating state");
+    			 logPrint(LOG,logLine);}
+
+
     if((operState == CO_NMT_OPERATIONAL) || (operState == CO_NMT_PRE_OPERATIONAL)){
+
+
+        if(LEVEL_1){
+        			 sprintf(logLine,"FILE:CO_SYNC.C||"
+        					 "Call: CO_SYNC_receive"
+        					 "\n, msg:check for the counterOverflowValue");
+        			 logPrint(LOG,logLine);}
+
         if(SYNC->counterOverflowValue == 0){
+        	if(LEVEL_1){
+        	 sprintf(logLine,"FILE:CO_SYNC.C||"
+						 "Call: CO_SYNC_receive"
+						 "\n, msg:check for msg->DLC=0");
+				 logPrint(LOG,logLine);}
+
             if(msg->DLC == 0U){
                 SYNC->CANrxNew = true;
             }
@@ -73,6 +105,11 @@ static void CO_SYNC_receive(void *object, const CO_CANrxMsg_t *msg){
                 SYNC->receiveError = (uint16_t)msg->DLC | 0x0100U;
             }
         }
+        if(LEVEL_1){
+	 sprintf(logLine,"FILE:CO_SYNC.C||"
+					 "Call: CO_SYNC_receive"
+					 "\n, msg:when NMT state is different than OPE an PRE_OPE");
+			 logPrint(LOG,logLine);}
         else{
             if(msg->DLC == 1U){
                 SYNC->counter = msg->data[0];
@@ -95,6 +132,13 @@ static void CO_SYNC_receive(void *object, const CO_CANrxMsg_t *msg){
  * For more information see file CO_SDO.h.
  */
 static CO_SDO_abortCode_t CO_ODF_1005(CO_ODF_arg_t *ODF_arg){
+
+	if(LEVEL_1){
+		 sprintf(logLine,"FILE:CO_SYNC.C||"
+						 "Call: CO_ODF_1005"
+						 "\n, msg:start");
+				 logPrint(LOG,logLine);}
+
     CO_SYNC_t *SYNC;
     uint32_t value;
     CO_SDO_abortCode_t ret = CO_SDO_AB_NONE;
@@ -102,29 +146,85 @@ static CO_SDO_abortCode_t CO_ODF_1005(CO_ODF_arg_t *ODF_arg){
     SYNC = (CO_SYNC_t*) ODF_arg->object;
     value = CO_getUint32(ODF_arg->data);
 
+    if(LEVEL_1){
+    		 sprintf(logLine,"FILE:CO_SYNC.C||"
+    						 "Call: CO_ODF_1005"
+    						 "\n, msg:check if SDO mode is UPLOAD");
+    				 logPrint(LOG,logLine);}
+
+
     if(!ODF_arg->reading){
         uint8_t configureSyncProducer = 0;
 
         /* only 11-bit CAN identifier is supported */
+        if(LEVEL_1){
+        		 sprintf(logLine,"FILE:CO_SYNC.C||"
+        						 "Call: CO_ODF_1005"
+        						 "\n, msg:check CAN frame type");
+        				 logPrint(LOG,logLine);}
         if(value & 0x20000000UL){
+
+        	if(LEVEL_1){
+				 sprintf(logLine,"FILE:CO_SYNC.C||"
+								 "Call: CO_ODF_1005"
+								 "\n, ERROR:Wrong frame format");
+						 logPrint(ERROR,logLine);}
+
+
             ret = CO_SDO_AB_INVALID_VALUE;
         }
         else{
+
+        	if(LEVEL_1){
+				 sprintf(logLine,"FILE:CO_SYNC.C||"
+								 "Call: CO_ODF_1005"
+								 "\n, msg:check generate Sync messge' bit set");
+						 logPrint(LOG,logLine);}
             /* is 'generate Sync messge' bit set? */
             if(value & 0x40000000UL){
                 /* if bit was set before, value can not be changed */
+            	if(LEVEL_1){
+						 sprintf(logLine,"FILE:CO_SYNC.C||"
+										 "Call: CO_ODF_1005"
+										 "\n, msg:check if Sync is a producer");
+								 logPrint(LOG,logLine);}
+
                 if(SYNC->isProducer){
+
+                	if(LEVEL_1){
+						 sprintf(logLine,"FILE:CO_SYNC.C||"
+										 "Call: CO_ODF_1005"
+										 "\n, ERROR:Value cannot be changed as sync is a producer");
+								 logPrint(ERROR,logLine);}
                     ret = CO_SDO_AB_DATA_DEV_STATE;
                 }
                 else{
+                	if(LEVEL_1){
+					 sprintf(logLine,"FILE:CO_SYNC.C||"
+									 "Call: CO_ODF_1005"
+									 "\n, ERROR:Sync bit is not set");
+							 logPrint(ERROR,logLine);}
+
                     configureSyncProducer = 1;
                 }
             }
         }
+        if(LEVEL_1){
+			 sprintf(logLine,"FILE:CO_SYNC.C||"
+							 "Call: CO_ODF_1005"
+							 "\n, msg:configure sync producer and consumer");
+					 logPrint(LOG,logLine);}
+
 
         /* configure sync producer and consumer */
         if(ret == CO_SDO_AB_NONE){
             SYNC->COB_ID = (uint16_t)(value & 0x7FFU);
+
+            if(LEVEL_1){
+			 sprintf(logLine,"FILE:CO_SYNC.C||"
+							 "Call: CO_ODF_1005"
+							 "\n, msg:check if configureSyncProducer is true or not, if true then sync is producer if false otherwise");
+					 logPrint(LOG,logLine);}
 
             if(configureSyncProducer){
                 uint8_t len = 0U;
@@ -167,6 +267,13 @@ static CO_SDO_abortCode_t CO_ODF_1005(CO_ODF_arg_t *ODF_arg){
  * For more information see file CO_SDO.h.
  */
 static CO_SDO_abortCode_t CO_ODF_1006(CO_ODF_arg_t *ODF_arg){
+
+    if(LEVEL_1){
+		sprintf(logLine,"FILE:CO_SYNC.C||"
+					 "Call: CO_ODF_1006"
+					 "\n, msg:start");
+			 logPrint(LOG,logLine);}
+
     CO_SYNC_t *SYNC;
     uint32_t value;
     CO_SDO_abortCode_t ret = CO_SDO_AB_NONE;
@@ -179,6 +286,13 @@ static CO_SDO_abortCode_t CO_ODF_1006(CO_ODF_arg_t *ODF_arg){
         if((SYNC->periodTime == 0) && (value != 0)){
             SYNC->counter = 0;
         }
+
+
+        if(LEVEL_1){
+    		sprintf(logLine,"FILE:CO_SYNC.C||"
+    					 "Call: CO_ODF_1006"
+    					 "\n, msg:check for overflow of the value");
+    			 logPrint(LOG,logLine);}
 
         SYNC->periodTime = value;
         SYNC->periodTimeoutTime = (value / 2U) * 3U;
@@ -200,6 +314,13 @@ static CO_SDO_abortCode_t CO_ODF_1006(CO_ODF_arg_t *ODF_arg){
  * For more information see file CO_SDO.h.
  */
 static CO_SDO_abortCode_t CO_ODF_1019(CO_ODF_arg_t *ODF_arg){
+
+    if(LEVEL_1){
+		sprintf(logLine,"FILE:CO_SYNC.C||"
+					 "Call: CO_ODF_1019"
+					 "\n, msg:start");
+			 logPrint(LOG,logLine);}
+
     CO_SYNC_t *SYNC;
     uint8_t value;
     CO_SDO_abortCode_t ret = CO_SDO_AB_NONE;
@@ -207,10 +328,27 @@ static CO_SDO_abortCode_t CO_ODF_1019(CO_ODF_arg_t *ODF_arg){
     SYNC = (CO_SYNC_t*) ODF_arg->object;
     value = ODF_arg->data[0];
 
+    if(LEVEL_1){
+    		sprintf(logLine,"FILE:CO_SYNC.C||"
+    					 "Call: CO_ODF_1019"
+    					 "\n, msg:check if the SDO state is download");
+    		logPrint(LOG,logLine);}
     if(!ODF_arg->reading){
         uint8_t len = 0U;
 
+        if(LEVEL_1){
+           		sprintf(logLine,"FILE:CO_SYNC.C||"
+           					 "Call: CO_ODF_1019"
+           					 "\n, msg:check if the period time is not zero");
+           		logPrint(LOG,logLine);}
+
         if(SYNC->periodTime){
+
+            if(LEVEL_1){
+               		sprintf(logLine,"FILE:CO_SYNC.C||"
+               					 "Call: CO_ODF_1019"
+               					 "\n, ERROR:period time is zero");
+               		logPrint(ERROR,logLine);}
             ret = CO_SDO_AB_DATA_DEV_STATE;
         }
         else{
@@ -218,6 +356,11 @@ static CO_SDO_abortCode_t CO_ODF_1019(CO_ODF_arg_t *ODF_arg){
             if(value != 0){
                 len = 1U;
             }
+            if(LEVEL_1){
+                     		sprintf(logLine,"FILE:CO_SYNC.C||"
+                     					 "Call: CO_ODF_1019"
+                     					 "\n, msg:call CO_CANtxBufferInit for initializing the CANtx buffer");
+                     		logPrint(LOG,logLine);}
 
             SYNC->CANtxBuff = CO_CANtxBufferInit(
                     SYNC->CANdevTx,         /* CAN device */
@@ -247,13 +390,38 @@ CO_ReturnError_t CO_SYNC_init(
         CO_CANmodule_t         *CANdevTx,
         uint16_t                CANdevTxIdx)
 {
+
+    if(LEVEL_1){
+			sprintf(logLine,"FILE:CO_SYNC.C||"
+						 "Call: CO_SYNC_init"
+						 "\n, msg:start");
+			logPrint(LOG,logLine);}
     uint8_t len = 0;
+
+    if(LEVEL_1){
+    			sprintf(logLine,"FILE:CO_SYNC.C||"
+    						 "Call: CO_SYNC_init"
+    						 "\n, msg:Verify arguments");
+    			logPrint(LOG,logLine);}
 
     /* verify arguments */
     if(SYNC==NULL || em==NULL || SDO==NULL || operatingState==NULL ||
         CANdevRx==NULL || CANdevTx==NULL){
+    	 if(LEVEL_1){
+    	    			sprintf(logLine,"FILE:CO_SYNC.C||"
+    	    						 "Call: CO_SYNC_init"
+    	    						 "\n, ERROR:Illegal argument");
+    	    			logPrint(ERROR,logLine);}
+
         return CO_ERROR_ILLEGAL_ARGUMENT;
     }
+
+    if(LEVEL_1){
+       			sprintf(logLine,"FILE:CO_SYNC.C||"
+       						 "Call: CO_SYNC_init"
+       						 "\n, msg:begin configuring object variables");
+       			logPrint(LOG,logLine);}
+
 
     /* Configure object variables */
     SYNC->isProducer = (COB_ID_SYNCMessage&0x40000000L) ? true : false;
@@ -281,10 +449,26 @@ CO_ReturnError_t CO_SYNC_init(
     SYNC->CANdevRx = CANdevRx;
     SYNC->CANdevRxIdx = CANdevRxIdx;
 
+
+    if(LEVEL_1){
+       			sprintf(logLine,"FILE:CO_SYNC.C||"
+       						 "Call: CO_SYNC_init"
+       						 "\n, msg:begin configuring object dictionary entries, call CO_OD_configure ");
+       			logPrint(LOG,logLine);}
+
     /* Configure Object dictionary entry at index 0x1005, 0x1006 and 0x1019 */
     CO_OD_configure(SDO, OD_H1005_COBID_SYNC,        CO_ODF_1005, (void*)SYNC, 0, 0);
     CO_OD_configure(SDO, OD_H1006_COMM_CYCL_PERIOD,  CO_ODF_1006, (void*)SYNC, 0, 0);
     CO_OD_configure(SDO, OD_H1019_SYNC_CNT_OVERFLOW, CO_ODF_1019, (void*)SYNC, 0, 0);
+
+
+    if(LEVEL_1){
+          			sprintf(logLine,"FILE:CO_SYNC.C||"
+          						 "Call: CO_SYNC_init"
+          						 "\n, msg:begin configuring onfigure SYNC CAN reception, call CO_CANrxBufferInit");
+          			logPrint(LOG,logLine);}
+
+
 
     /* configure SYNC CAN reception */
     CO_CANrxBufferInit(
@@ -295,6 +479,14 @@ CO_ReturnError_t CO_SYNC_init(
             0,                      /* rtr */
             (void*)SYNC,            /* object passed to receive function */
             CO_SYNC_receive);       /* this function will process received message */
+
+    if(LEVEL_1){
+          			sprintf(logLine,"FILE:CO_SYNC.C||"
+          						 "Call: CO_SYNC_init"
+          						 "\n, msg:begin configure SYNC CAN transmission");
+          			logPrint(LOG,logLine);}
+
+
 
     /* configure SYNC CAN transmission */
     SYNC->CANdevTx = CANdevTx;
@@ -317,13 +509,33 @@ uint8_t CO_SYNC_process(
         uint32_t                timeDifference_us,
         uint32_t                ObjDict_synchronousWindowLength)
 {
+	  if(LEVEL_1){
+	          			sprintf(logLine,"FILE:CO_SYNC.C||"
+	          						 "Call: CO_SYNC_process"
+	          						 "\n, msg:start");
+	          			logPrint(LOG,logLine);}
+
+
+
     uint8_t ret = 0;
     uint32_t timerNew;
+    if(LEVEL_1){
+   	          			sprintf(logLine,"FILE:CO_SYNC.C||"
+   	          						 "Call: CO_SYNC_process"
+   	          						 "\n, msg:check the operating state");
+   	          			logPrint(LOG,logLine);}
+
 
     if(*SYNC->operatingState == CO_NMT_OPERATIONAL || *SYNC->operatingState == CO_NMT_PRE_OPERATIONAL){
         /* update sync timer, no overflow */
         timerNew = SYNC->timer + timeDifference_us;
         if(timerNew > SYNC->timer) SYNC->timer = timerNew;
+
+        if(LEVEL_1){
+          	          			sprintf(logLine,"FILE:CO_SYNC.C||"
+          	          						 "Call: CO_SYNC_process"
+          	          						 "\n, msg:check if the SYNC was just received");
+          	          			logPrint(LOG,logLine);}
 
         /* was SYNC just received */
         if(SYNC->CANrxNew){
@@ -332,6 +544,12 @@ uint8_t CO_SYNC_process(
             SYNC->CANrxNew = false;
         }
 
+
+        if(LEVEL_1){
+          	          			sprintf(logLine,"FILE:CO_SYNC.C||"
+          	          						 "Call: CO_SYNC_process"
+          	          						 "\n, msg: sync  producer begin");
+          	          			logPrint(LOG,logLine);}
         /* SYNC producer */
         if(SYNC->isProducer && SYNC->periodTime){
             if(SYNC->timer >= SYNC->periodTime){
@@ -346,6 +564,13 @@ uint8_t CO_SYNC_process(
 
         /* Synchronous PDOs are allowed only inside time window */
         if(ObjDict_synchronousWindowLength){
+
+
+            if(LEVEL_1){
+              	          			sprintf(logLine,"FILE:CO_SYNC.C||"
+              	          						 "Call: CO_SYNC_process"
+              	          						 "\n, msg: check if SYNC->timer > ObjDict_synchronousWindowLength");
+              	          			logPrint(LOG,logLine);}
             if(SYNC->timer > ObjDict_synchronousWindowLength){
                 if(SYNC->curentSyncTimeIsInsideWindow){
                     ret = 2;
@@ -359,7 +584,11 @@ uint8_t CO_SYNC_process(
         else{
             SYNC->curentSyncTimeIsInsideWindow = true;
         }
-
+        if(LEVEL_1){
+				sprintf(logLine,"FILE:CO_SYNC.C||"
+							 "Call: CO_SYNC_process"
+							 "\n, msg: begin Verify timeout of SYNC");
+				logPrint(LOG,logLine);}
         /* Verify timeout of SYNC */
         if(SYNC->periodTime && SYNC->timer > SYNC->periodTimeoutTime && *SYNC->operatingState == CO_NMT_OPERATIONAL)
             CO_errorReport(SYNC->em, CO_EM_SYNC_TIME_OUT, CO_EMC_COMMUNICATION, SYNC->timer);
@@ -367,7 +596,11 @@ uint8_t CO_SYNC_process(
     else {
         SYNC->CANrxNew = false;
     }
-
+    if(LEVEL_1){
+				sprintf(logLine,"FILE:CO_SYNC.C||"
+							 "Call: CO_SYNC_process"
+							 "\n, msg: begin verify error from receive function");
+				logPrint(LOG,logLine);}
     /* verify error from receive function */
     if(SYNC->receiveError != 0U){
         CO_errorReport(SYNC->em, CO_EM_SYNC_LENGTH, CO_EMC_SYNC_DATA_LENGTH, (uint32_t)SYNC->receiveError);

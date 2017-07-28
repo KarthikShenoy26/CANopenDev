@@ -47,6 +47,7 @@
 
 #include "CO_SDO.h"
 #include "CO_Emergency.h"
+#include "Logger.h"
 /*#include "CANopen.h"*/
 
 
@@ -57,6 +58,14 @@
  */
 static CO_SDO_abortCode_t CO_ODF_1003(CO_ODF_arg_t *ODF_arg);
 static CO_SDO_abortCode_t CO_ODF_1003(CO_ODF_arg_t *ODF_arg){
+
+
+    if(LEVEL_1){
+    			 sprintf(logLine,"FILE:CO_Emergency.C||"
+    					 "Call: CO_ODF_1003"
+    					 "\n, msg:start");
+    			 logPrint(LOG,logLine);}
+
     CO_EMpr_t *emPr;
     uint8_t value;
     CO_SDO_abortCode_t ret = CO_SDO_AB_NONE;
@@ -64,31 +73,78 @@ static CO_SDO_abortCode_t CO_ODF_1003(CO_ODF_arg_t *ODF_arg){
     emPr = (CO_EMpr_t*) ODF_arg->object;
     value = ODF_arg->data[0];
 
+
+    if(LEVEL_1){
+    			 sprintf(logLine,"FILE:CO_Emergency.C||"
+    					 "Call: CO_ODF_1003"
+    					 "\n, msg:checks if the SDO state is upload");
+    			 logPrint(LOG,logLine);}
+
     if(ODF_arg->reading){
         uint8_t noOfErrors;
         noOfErrors = emPr->preDefErrNoOfErrors;
+        if(LEVEL_1){
+           			 sprintf(logLine,"FILE:CO_Emergency.C||"
+           					 "Call: CO_ODF_1003"
+           					 "\n, msg:checks subindexes in ODF_arg");
+           			 logPrint(LOG,logLine);}
 
         if(ODF_arg->subIndex == 0U){
             ODF_arg->data[0] = noOfErrors;
         }
+
         else if(ODF_arg->subIndex > noOfErrors){
+
+        	 if(LEVEL_1){
+        	    			 sprintf(logLine,"FILE:CO_Emergency.C||"
+        	    					 "Call: CO_ODF_1003"
+        	    					 "\n, ERROR:NUMBER OF SUBINDES MORE THAN THE NUMBER OF ERRORS");
+        	    			 logPrint(ERROR,logLine);}
             ret = CO_SDO_AB_NO_DATA;
         }
         else{
+
+        	 if(LEVEL_1){
+					 sprintf(logLine,"FILE:CO_Emergency.C||"
+							 "Call: CO_ODF_1003"
+							 "\n, ERROR:false subindex information");
+					 logPrint(ERROR,logLine);}
             ret = CO_SDO_AB_NONE;
         }
     }
     else{
+    	 if(LEVEL_1){
+					 sprintf(logLine,"FILE:CO_Emergency.C||"
+							 "Call: CO_ODF_1003"
+							 "\n, msg:check is subindex is 0");
+					 logPrint(LOG,logLine);}
         /* only '0' may be written to subIndex 0 */
         if(ODF_arg->subIndex == 0U){
+
+        	if(LEVEL_1){
+        						 sprintf(logLine,"FILE:CO_Emergency.C||"
+        								 "Call: CO_ODF_1003"
+        								 "\n, msg:check is value 0");
+        						 logPrint(LOG,logLine);}
             if(value == 0U){
                 emPr->preDefErrNoOfErrors = 0U;
             }
             else{
+            	if(LEVEL_1){
+            						 sprintf(logLine,"FILE:CO_Emergency.C||"
+            								 "Call: CO_ODF_1003"
+            								 "\n, ERROR:Invalid value");
+            						 logPrint(ERROR,logLine);}
                 ret = CO_SDO_AB_INVALID_VALUE;
             }
         }
         else{
+
+        	if(LEVEL_1){
+        	            						 sprintf(logLine,"FILE:CO_Emergency.C||"
+        	            								 "Call: CO_ODF_1003"
+        	            								 "\n, ERROR:Attempt tp write a read only field");
+        	            						 logPrint(ERROR,logLine);}
             ret = CO_SDO_AB_READONLY;
         }
     }
@@ -104,13 +160,23 @@ static CO_SDO_abortCode_t CO_ODF_1003(CO_ODF_arg_t *ODF_arg){
  */
 static CO_SDO_abortCode_t CO_ODF_1014(CO_ODF_arg_t *ODF_arg);
 static CO_SDO_abortCode_t CO_ODF_1014(CO_ODF_arg_t *ODF_arg){
+
+	if(LEVEL_1){
+				 sprintf(logLine,"FILE:CO_Emergency.C||"
+						 "Call: CO_ODF_1014"
+						 "\n, msg:start");
+				 logPrint(LOG,logLine);}
     uint8_t *nodeId;
     uint32_t value;
     CO_SDO_abortCode_t ret = CO_SDO_AB_NONE;
 
     nodeId = (uint8_t*) ODF_arg->object;
     value = CO_getUint32(ODF_arg->data);
-
+    if(LEVEL_1){
+						 sprintf(logLine,"FILE:CO_Emergency.C||"
+								 "Call: CO_ODF_1003"
+								 "\n, msg:add node-ID to the value");
+						 logPrint(LOG,logLine);}
     /* add nodeId to the value */
     if(ODF_arg->reading){
         CO_setUint32(ODF_arg->data, value + *nodeId);
@@ -134,13 +200,37 @@ CO_ReturnError_t CO_EM_init(
         uint16_t                CANdevTxIdx,
         uint16_t                CANidTxEM)
 {
-    uint8_t i;
 
+	if(LEVEL_1){
+			 sprintf(logLine,"FILE:CO_Emergency.C||"
+					 "Call: CO_EM_init"
+					 "\n, msg:start");
+			 logPrint(LOG,logLine);}
+
+    uint8_t i;
+	if(LEVEL_1){
+			 sprintf(logLine,"FILE:CO_Emergency.C||"
+					 "Call: CO_EM_init"
+					 "\n, msg:verify function arguments begins");
+			 logPrint(LOG,logLine);}
     /* verify arguments */
     if(em==NULL || emPr==NULL || SDO==NULL || errorStatusBits==NULL ||
         errorStatusBitsSize<6U || errorRegister==NULL || preDefErr==NULL || CANdev==NULL){
+
+    	if(LEVEL_1){
+    			 sprintf(logLine,"FILE:CO_Emergency.C||"
+    					 "Call: CO_EM_init"
+    					 "\n, ERROR:Illegal arguments to the function");
+    			 logPrint(ERROR,logLine);}
+
         return CO_ERROR_ILLEGAL_ARGUMENT;
     }
+	if(LEVEL_1){
+			 sprintf(logLine,"FILE:CO_Emergency.C||"
+					 "Call: CO_EM_init"
+					 "\n, msg:Configure object variables");
+			 logPrint(LOG,logLine);}
+
 
     /* Configure object variables */
     em->errorStatusBits         = errorStatusBits;
@@ -163,9 +253,22 @@ CO_ReturnError_t CO_EM_init(
         em->errorStatusBits[i] = 0U;
     }
 
+    if(LEVEL_1){
+    			 sprintf(logLine,"FILE:CO_Emergency.C||"
+    					 "Call: CO_EM_init"
+    					 "\n, msg:Configure object dictionary entries, call CO_OD_configure");
+    			 logPrint(LOG,logLine);}
+
     /* Configure Object dictionary entry at index 0x1003 and 0x1014 */
     CO_OD_configure(SDO, OD_H1003_PREDEF_ERR_FIELD, CO_ODF_1003, (void*)emPr, 0, 0U);
     CO_OD_configure(SDO, OD_H1014_COBID_EMERGENCY, CO_ODF_1014, (void*)&SDO->nodeId, 0, 0U);
+
+
+    if(LEVEL_1){
+      			 sprintf(logLine,"FILE:CO_Emergency.C||"
+      					 "Call: CO_EM_init"
+      					 "\n, msg:Cconfigure emergency message CAN transmission, call CO_CANtxBufferInit");
+      			 logPrint(LOG,logLine);}
 
     /* configure emergency message CAN transmission */
     emPr->CANdev = CANdev;
@@ -187,6 +290,12 @@ void CO_EM_initCallback(
         CO_EM_t                *em,
         void                  (*pFunctSignal)(void))
 {
+    if(LEVEL_1){
+      			 sprintf(logLine,"FILE:CO_Emergency.C||"
+      					 "Call: CO_EM_initCallback"
+      					 "\n, msg:start");
+      			 logPrint(LOG,logLine);}
+
     if(em != NULL){
         em->pFunctSignal = pFunctSignal;
     }
@@ -201,8 +310,21 @@ void CO_EM_process(
         uint16_t                emInhTime)
 {
 
+	 if(LEVEL_1){
+	      			 sprintf(logLine,"FILE:CO_Emergency.C||"
+	      					 "Call: CO_EM_process"
+	      					 "\n, msg:start");
+	      			 logPrint(LOG,logLine);}
+
     CO_EM_t *em = emPr->em;
     uint8_t errorRegister;
+
+    if(LEVEL_1){
+   	      			 sprintf(logLine,"FILE:CO_Emergency.C||"
+   	      					 "Call: CO_EM_process"
+   	      					 "\n, msg:verify errors from driver and other");
+   	      			 logPrint(LOG,logLine);}
+
 
     /* verify errors from driver and other */
     CO_CANverifyErrors(emPr->CANdev);
@@ -211,6 +333,12 @@ void CO_EM_process(
         em->wrongErrorReport = 0U;
     }
 
+
+    if(LEVEL_1){
+   	      			 sprintf(logLine,"FILE:CO_Emergency.C||"
+   	      					 "Call: CO_EM_process"
+   	      					 "\n, msg:calculate Error register");
+   	      			 logPrint(LOG,logLine);}
 
     /* calculate Error register */
     errorRegister = 0U;
@@ -251,14 +379,36 @@ void CO_EM_process(
         }
         emPr->inhibitEmTimer = 0U;
 
+        if(LEVEL_1){if(LEVEL_1){
+			 sprintf(logLine,"FILE:CO_Emergency.C||"
+					 "Call: CO_isError"
+					 "\n, msg:start");
+			 logPrint(LOG,logLine);}
+          	      			 sprintf(logLine,"FILE:CO_Emergency.C||"
+          	      					 "Call: CO_EM_process"
+          	      					 "\n, msg:verify message buffer overflow, then clear full flag begin");
+          	      			 logPrint(LOG,logLine);}
+
+
         /* verify message buffer overflow, then clear full flag */
         if(em->bufFull == 2U){
             em->bufFull = 0U;    /* will be updated below */
             CO_errorReport(em, CO_EM_EMERGENCY_BUFFER_FULL, CO_EMC_GENERIC, 0U);
         }
         else{
+        	 if(LEVEL_1){
+						 sprintf(logLine,"FILE:CO_Emergency.C||"
+								 "Call: CO_EM_process"
+								 "\n, msg:buffer not full");
+						 logPrint(LOG,logLine);}
             em->bufFull = 0;
         }
+
+        if(LEVEL_1){
+       						 sprintf(logLine,"FILE:CO_Emergency.C||"
+       								 "Call: CO_EM_process"
+       								 "\n, msg:begin to write to 'pre-defined error field' (object dictionary, index 0x1003)");
+       						 logPrint(LOG,logLine);}
 
         /* write to 'pre-defined error field' (object dictionary, index 0x1003) */
         if(emPr->preDefErr){
@@ -271,6 +421,12 @@ void CO_EM_process(
             emPr->preDefErr[0] = preDEF;
         }
 
+
+        if(LEVEL_1){
+			 sprintf(logLine,"FILE:CO_Emergency.C||"
+					 "Call: CO_EM_process"
+					 "\n, msg:send CAN message, call CO_CANsend");
+			 logPrint(LOG,logLine);}
         /* send CAN message */
         CO_CANsend(emPr->CANdev, emPr->CANtxBuff);
     }
@@ -281,16 +437,47 @@ void CO_EM_process(
 
 /******************************************************************************/
 void CO_errorReport(CO_EM_t *em, const uint8_t errorBit, const uint16_t errorCode, const uint32_t infoCode){
+
+	if(LEVEL_1){
+				 sprintf(logLine,"FILE:CO_Emergency.C||"
+						 "Call: CO_errorReport"
+						 "\n, msg:start");
+				 logPrint(LOG,logLine);}
+
     uint8_t index = errorBit >> 3;
     uint8_t bitmask = 1 << (errorBit & 0x7);
     uint8_t *errorStatusBits = 0;
     bool_t sendEmergency = true;
 
+	if(LEVEL_1){
+				 sprintf(logLine,"FILE:CO_Emergency.C||"
+						 "Call: CO_errorReport"
+						 "\n, msg:check if em is Null");
+				 logPrint(LOG,logLine);}
+
     if(em == NULL){
+    	if(LEVEL_1){
+    				 sprintf(logLine,"FILE:CO_Emergency.C||"
+    						 "Call: CO_errorReport"
+    						 "\n, ERROR:Em is null");
+    				 logPrint(ERROR,logLine);}
         sendEmergency = false;
     }
+	if(LEVEL_1){
+				 sprintf(logLine,"FILE:CO_Emergency.C||"
+						 "Call: CO_errorReport"
+						 "\n, msg:check if Index > errorStatusBitSize");
+				 logPrint(LOG,logLine);}
+
     else if(index >= em->errorStatusBitsSize){
         /* if errorBit value not supported, send emergency 'CO_EM_WRONG_ERROR_REPORT' */
+
+    	if(LEVEL_1){
+    				 sprintf(logLine,"FILE:CO_Emergency.C||"
+    						 "Call: CO_errorReport"
+    						 "\n, ERROR:errorbit value not supported, wrong error report");
+    				 logPrint(LOG,logLine);}
+
         em->wrongErrorReport = errorBit;
         sendEmergency = false;
     }
@@ -342,12 +529,34 @@ void CO_errorReport(CO_EM_t *em, const uint8_t errorBit, const uint16_t errorCod
 
 /******************************************************************************/
 void CO_errorReset(CO_EM_t *em, const uint8_t errorBit, const uint32_t infoCode){
+
+	if(LEVEL_1){
+				 sprintf(logLine,"FILE:CO_Emergency.C||"
+						 "Call: CO_errorReset"
+						 "\n, msg:start");
+
+				 logPrint(LOG,logLine);}
+
     uint8_t index = errorBit >> 3;
     uint8_t bitmask = 1 << (errorBit & 0x7);
     uint8_t *errorStatusBits = 0;
     bool_t sendEmergency = true;
 
+    if(LEVEL_1){
+    				 sprintf(logLine,"FILE:CO_Emergency.C||"
+    						 "Call: CO_errorReset"
+    						 "\n, msg:check if em is Null");
+    				 logPrint(LOG,logLine);}
+
+
+
     if(em == NULL){
+
+    	if(LEVEL_1){
+    	    				 sprintf(logLine,"FILE:CO_Emergency.C||"
+    	    						 "Call: CO_errorReset"
+    	    						 "\n, ERROR:Em is null");
+    	    				 logPrint(ERROR,logLine);}
         sendEmergency = false;
     }
     else if(index >= em->errorStatusBitsSize){
@@ -366,7 +575,11 @@ void CO_errorReset(CO_EM_t *em, const uint8_t errorBit, const uint32_t infoCode)
     if(sendEmergency){
         /* erase error bit */
         *errorStatusBits &= ~bitmask;
-
+        if(LEVEL_1){
+            				 sprintf(logLine,"FILE:CO_Emergency.C||"
+            						 "Call: CO_errorReport"
+            						 "\n, msg:verify if the buffer is full");
+            				 logPrint(LOG,logLine);}
         /* verify buffer full */
         if(em->bufFull){
             em->bufFull = 2;
@@ -401,9 +614,23 @@ void CO_errorReset(CO_EM_t *em, const uint8_t errorBit, const uint32_t infoCode)
 
 /******************************************************************************/
 bool_t CO_isError(CO_EM_t *em, const uint8_t errorBit){
+
+	if(LEVEL_1){
+	    				 sprintf(logLine,"FILE:CO_Emergency.C||"
+	    						 "Call: CO_isError"
+	    						 "\n, msg:start");
+	    				 logPrint(LOG,logLine);}
     uint8_t index = errorBit >> 3;
     uint8_t bitmask = 1 << (errorBit & 0x7);
     bool_t ret = false;
+
+
+    if(LEVEL_1){
+    	    				 sprintf(logLine,"FILE:CO_Emergency.C||"
+    	    						 "Call: CO_isError"
+    	    						 "\n, msg:check if em is not null and if index < than the errorStatusBitsSize");
+    	    				 logPrint(LOG,logLine);}
+
 
     if(em != NULL && index < em->errorStatusBitsSize){
         if((em->errorStatusBits[index] & bitmask) != 0){

@@ -33,7 +33,7 @@
 #include <stdio.h>
 #include <string.h>     /* for memcpy */
 #include <stdlib.h>     /* for malloc, free */
-
+#include"Logger.h"
 
 #define RETURN_SUCCESS  0
 #define RETURN_ERROR   -1
@@ -41,25 +41,70 @@
 
 /******************************************************************************/
 CO_SDO_abortCode_t CO_ODF_1010(CO_ODF_arg_t *ODF_arg) {
+//**************************************************************************************************/
+	if(LEVEL_1){
+		  				 sprintf(logLine,"FILE:CO_OD_storage.C||"
+		  						 "Call: CO_ODF_1010"
+		  						 "\n, msg: start");
+		  			   	 logPrint(LOG,logLine);}
+//**************************************************************************************************/
+
+
 	CO_OD_storage_t *odStor;
     uint32_t value;
     CO_SDO_abortCode_t ret = CO_SDO_AB_NONE;
 
     odStor = (CO_OD_storage_t*) ODF_arg->object;
+//**************************************************************************************************/
+	if(LEVEL_1){
+						 sprintf(logLine,"FILE:CO_OD_storage.C||"
+								 "Call: CO_ODF_1010"
+								 "\n, msg: call CO_getUint32 ");
+						 logPrint(LOG,logLine);}
+//**************************************************************************************************/
     value = CO_getUint32(ODF_arg->data);
 
     if(!ODF_arg->reading) {
         /* don't change the old value */
         CO_memcpy(ODF_arg->data, (const uint8_t*)ODF_arg->ODdataStorage, 4U);
+//**************************************************************************************************/
+	if(LEVEL_1){
+						 sprintf(logLine,"FILE:CO_OD_storage.C||"
+								 "Call: CO_ODF_1010"
+								 "\n, msg: check subindex of ODF_arg");
+						 logPrint(LOG,logLine);}
+//**************************************************************************************************/
+
+
 
         if(ODF_arg->subIndex == 1) {
             /* store parameters */
+if(LEVEL_1){
+			 sprintf(logLine,"FILE:CO_OD_storage.C||"
+					 "Call: CO_ODF_1010"
+					 "\n, msg: check if the value at subindex 1 is ASCII equivalent of 'SAVE'");
+			 			 logPrint(LOG,logLine);}
+
             if(value == 0x65766173UL) {
+
+if(LEVEL_1){
+ sprintf(logLine,"FILE:CO_OD_storage.C||"
+		 "Call: CO_ODF_1010"
+		 "\n, msg: CO_OD_storage_saveSecure is called ");
+			 logPrint(LOG,logLine);}
+
+
                 if(CO_OD_storage_saveSecure(odStor->odAddress, odStor->odSize, odStor->filename) != 0) {
                     ret = CO_SDO_AB_HW;
                 }
             }
             else {
+	if(LEVEL_1){
+	 sprintf(logLine,"FILE:CO_OD_storage.C||"
+			 "Call: CO_ODF_1010"
+			 "\n, ERROR: the value at subindex 1 is not ASCII equivalent of 'SAVE' ");
+				 logPrint(ERROR,logLine);}
+
                 ret = CO_SDO_AB_DATA_TRANSF;
             }
         }
@@ -71,11 +116,27 @@ CO_SDO_abortCode_t CO_ODF_1010(CO_ODF_arg_t *ODF_arg) {
 
 /******************************************************************************/
 CO_SDO_abortCode_t CO_ODF_1011(CO_ODF_arg_t *ODF_arg) {
+
+if(LEVEL_1){
+ sprintf(logLine,"FILE:CO_OD_storage.C||"
+		 "Call: CO_ODF_1011"
+		 "\n, msg: start ");
+			 logPrint(LOG,logLine);}
+
+
+
     CO_OD_storage_t *odStor;
     uint32_t value;
     CO_SDO_abortCode_t ret = CO_SDO_AB_NONE;
 
     odStor = (CO_OD_storage_t*) ODF_arg->object;
+
+    if(LEVEL_1){
+		 sprintf(logLine,"FILE:CO_OD_storage.C||"
+				 "Call: CO_ODF_1011"
+				 "\n, msg: call CO_getUint32 ");
+		 logPrint(LOG,logLine);}
+
     value = CO_getUint32(ODF_arg->data);
 
     if(!ODF_arg->reading) {
@@ -84,12 +145,33 @@ CO_SDO_abortCode_t CO_ODF_1011(CO_ODF_arg_t *ODF_arg) {
 
         if(ODF_arg->subIndex >= 1) {
             /* restore default parameters */
+
+if(LEVEL_1){
+ sprintf(logLine,"FILE:CO_OD_storage.C||"
+		 "Call: CO_ODF_1011"
+		 "\n, msg: check if the value at subindex 1 is ASCII equivalent of 'LOAD'");
+			 logPrint(LOG,logLine);}
+
+
             if(value == 0x64616F6CUL) {
+
+            	if(LEVEL_1){
+            	 sprintf(logLine,"FILE:CO_OD_storage.C||"
+            			 "Call: CO_ODF_1011"
+            			 "\n, msg: CO_OD_storage_restoreSecure is called ");
+            				 logPrint(LOG,logLine);}
+
                 if(CO_OD_storage_restoreSecure(odStor->filename) != 0) {
                     ret = CO_SDO_AB_HW;
                 }
             }
             else {
+	if(LEVEL_1){
+	 sprintf(logLine,"FILE:CO_OD_storage.C||"
+			 "Call: CO_ODF_1011"
+			 "\n, ERROR: the value at subindex 1 is not ASCII equivalent of 'LOAD' ");
+				 logPrint(ERROR,logLine);}
+
                 ret = CO_SDO_AB_DATA_TRANSF;
             }
         }
@@ -105,6 +187,12 @@ int CO_OD_storage_saveSecure(
         uint32_t                odSize,
         char                   *filename)
 {
+
+	if(LEVEL_1){
+	 sprintf(logLine,"FILE:CO_OD_storage.C||"
+			 "Call: CO_OD_storage_saveSecure"
+			 "\n, msg:start ");
+				 logPrint(LOG,logLine);}
     int ret = RETURN_SUCCESS;
 
     char *filename_old = NULL;
@@ -112,17 +200,44 @@ int CO_OD_storage_saveSecure(
 
     /* Generate new string with extension '.old' and rename current file to it. */
     filename_old = malloc(strlen(filename)+10);
+
+    if(LEVEL_1){
+    	 sprintf(logLine,"FILE:CO_OD_storage.C||"
+    			 "Call: CO_OD_storage_saveSecure"
+    			 "\n, msg:check if the filename_old is not null ");
+    	 logPrint(LOG,logLine);}
+
     if(filename_old != NULL) {
         strcpy(filename_old, filename);
         strcat(filename_old, ".old");
 
         remove(filename_old);
         if(rename(filename, filename_old) != 0) {
+
+if(LEVEL_1){
+		 sprintf(logLine,"FILE:CO_OD_storage.C||"
+				 "Call: CO_OD_storage_saveSecure"
+				 "\n, ERROR:rename of filename to filename_old failed ");
+		 logPrint(ERROR,logLine);}
+
             ret = RETURN_ERROR;
         }
     } else {
+
+    	 if(LEVEL_1){
+    	    	 sprintf(logLine,"FILE:CO_OD_storage.C||"
+    	    			 "Call: CO_OD_storage_saveSecure"
+    	    			 "\n, ERROR:check if the filename_old is null ");
+    	    	 logPrint(ERROR,logLine);}
         ret = RETURN_ERROR;
     }
+
+    if(LEVEL_1){
+        	    	 sprintf(logLine,"FILE:CO_OD_storage.C||"
+        	    			 "Call: CO_OD_storage_saveSecure"
+        	    			 "\n, msg:open a new file and write data to it begins ");
+        	    	 logPrint(LOG,logLine);}
+
 
     /* Open a new file and write data to it, including CRC. */
     if(ret == RETURN_SUCCESS) {
@@ -137,11 +252,24 @@ int CO_OD_storage_saveSecure(
             fwrite((const void *)&CRC, 1, 2, fp);
             fclose(fp);
         } else {
+
+if(LEVEL_1){
+		 sprintf(logLine,"FILE:CO_OD_storage.C||"
+				 "Call: CO_OD_storage_saveSecure"
+				 "\n, ERROR:opening a new file and writing failed ");
+		 logPrint(ERROR,logLine);}
             ret = RETURN_ERROR;
         }
     }
 
     /* Verify data */
+if(LEVEL_1){
+ sprintf(logLine,"FILE:CO_OD_storage.C||"
+		 "Call: CO_OD_storage_saveSecure"
+		 "\n, msg:veirfy the data written into the new file begins ");
+ logPrint(LOG,logLine);}
+
+
     if(ret == RETURN_SUCCESS) {
         void *buf = NULL;
         FILE *fp = NULL;
@@ -160,10 +288,15 @@ int CO_OD_storage_saveSecure(
             }
             free(buf);
         }
-
-
         /* If size or CRC differs, report error */
         if(buf == NULL || fp == NULL || cnt != (odSize + 2) || CRC != CRC2) {
+
+if(LEVEL_1){
+		 sprintf(logLine,"FILE:CO_OD_storage.C||"
+				 "Call: CO_OD_storage_saveSecure"
+				 "\n, ERROR:verification of data written to new file failed ");
+		 logPrint(ERROR,logLine);}
+
             ret = RETURN_ERROR;
         }
     }
@@ -182,17 +315,40 @@ int CO_OD_storage_saveSecure(
 
 /******************************************************************************/
 int CO_OD_storage_restoreSecure(char *filename) {
+
+	if(LEVEL_1){
+			 sprintf(logLine,"FILE:CO_OD_storage.C||"
+					 "Call: CO_OD_storage_restoreSecure"
+					 "\n, msg:start ");
+			 logPrint(LOG,logLine);}
+
+
     int ret = RETURN_SUCCESS;
     FILE *fp = NULL;
 
     /* If filename already exists, rename it to '.old'. */
     fp = fopen(filename, "r");
+
+    if(LEVEL_1){
+    			 sprintf(logLine,"FILE:CO_OD_storage.C||"
+    					 "Call: CO_OD_storage_restoreSecure"
+    					 "\n, msg:check if the file pointer is null ");
+    			 logPrint(LOG,logLine);}
+
+
+
     if(fp != NULL) {
         char *filename_old = NULL;
 
         fclose(fp);
 
         filename_old = malloc(strlen(filename)+10);
+
+        if(LEVEL_1){
+            			 sprintf(logLine,"FILE:CO_OD_storage.C||"
+            					 "Call: CO_OD_storage_restoreSecure"
+            					 "\n, msg:check if the filename_old is null ");
+            			 logPrint(LOG,logLine);}
         if(filename_old != NULL) {
             strcpy(filename_old, filename);
             strcat(filename_old, ".old");
@@ -204,17 +360,36 @@ int CO_OD_storage_restoreSecure(char *filename) {
             free(filename_old);
         }
         else {
+        	if(LEVEL_1){
+        	    			 sprintf(logLine,"FILE:CO_OD_storage.C||"
+        	    					 "Call: CO_OD_storage_restoreSecure"
+        	    					 "\n, ERROR:filename_old is null ");
+        	    			 logPrint(ERROR,logLine);}
+
             ret = RETURN_ERROR;
         }
     }
 
     /* create an empty file and write "-\n" to it. */
+    if(LEVEL_1){
+        			 sprintf(logLine,"FILE:CO_OD_storage.C||"
+        					 "Call: CO_OD_storage_restoreSecure"
+        					 "\n, msg:begin creation of an empty file and start writing ");
+        			 logPrint(LOG,logLine);}
+
     if(ret == RETURN_SUCCESS) {
         fp = fopen(filename, "w");
         if(fp != NULL) {
             fputs("-\n", fp);
             fclose(fp);
         } else {
+
+        	if(LEVEL_1){
+						 sprintf(logLine,"FILE:CO_OD_storage.C||"
+								 "Call: CO_OD_storage_restoreSecure"
+								 "\n, ERROR:filename_old is null ");
+						 logPrint(ERROR,logLine);}
+
             ret = RETURN_ERROR;
         }
     }
@@ -230,15 +405,50 @@ CO_ReturnError_t CO_OD_storage_init(
         uint32_t                odSize,
         char                   *filename)
 {
+	if(LEVEL_1){
+			 sprintf(logLine,"FILE:CO_OD_storage.C||"
+					 "Call: CO_OD_storage_init"
+					 "\n, msg:start ");
+			 logPrint(LOG,logLine);}
+
+
     CO_ReturnError_t ret = CO_ERROR_NO;
     void *buf = NULL;
 
     /* verify arguments */
+
+    if(LEVEL_1){
+    			 sprintf(logLine,"FILE:CO_OD_storage.C||"
+    					 "Call: CO_OD_storage_init"
+    					 "\n, msg:check if odStor and odAddress are null ");
+    			 logPrint(LOG,logLine);}
+
+
     if(odStor==NULL || odAddress==NULL) {
+
+
+
+    	if(LEVEL_1){
+    				 sprintf(logLine,"FILE:CO_OD_storage.C||"
+    						 "Call: CO_OD_storage_init"
+    						 "\n, ERROR: Arguments are illegal");
+    				 logPrint(ERROR,logLine);}
+
+
         ret = CO_ERROR_ILLEGAL_ARGUMENT;
     }
 
     /* configure object variables and allocate buffer */
+
+    if(LEVEL_1){
+    			 sprintf(logLine,"FILE:CO_OD_storage.C||"
+    					 "Call: CO_OD_storage_init"
+    					 "\n, msg:begin configure object variables and allocate buffer ");
+    			 logPrint(LOG,logLine);}
+
+
+
+
     if(ret == CO_ERROR_NO) {
         odStor->odAddress = odAddress;
         odStor->odSize = odSize;
@@ -249,9 +459,22 @@ CO_ReturnError_t CO_OD_storage_init(
 
         buf = malloc(odStor->odSize);
         if(buf == NULL) {
+
+        	if(LEVEL_1){
+						 sprintf(logLine,"FILE:CO_OD_storage.C||"
+								 "Call: CO_OD_storage_init"
+								 "\n, ERROR:Buffer allocated is null, out of memory");
+						 logPrint(ERROR,logLine);}
+
             ret = CO_ERROR_OUT_OF_MEMORY;
         }
     }
+
+    if(LEVEL_1){
+        			 sprintf(logLine,"FILE:CO_OD_storage.C||"
+        					 "Call: CO_OD_storage_init"
+        					 "\n, msg:read data from the file and verify CRC ");
+        			 logPrint(LOG,logLine);}
 
     /* read data from the file and verify CRC */
     if(ret == CO_ERROR_NO) {
@@ -270,14 +493,32 @@ CO_ReturnError_t CO_OD_storage_init(
 
         if(cnt == 2 && *((char*)buf) == '-') {
             /* file is empty, default values will be used, no error */
+            if(LEVEL_1){
+					 sprintf(logLine,"FILE:CO_OD_storage.C||"
+							 "Call: CO_OD_storage_init"
+							 "\n, ERROR:empty file ");
+					 logPrint(ERROR,logLine);}
+
             ret = CO_ERROR_NO;
         }
         else if(cnt != (odStor->odSize + 2)) {
             /* file length does not match */
+        	if(LEVEL_1){
+        						 sprintf(logLine,"FILE:CO_OD_storage.C||"
+        								 "Call: CO_OD_storage_init"
+        								 "\n, ERROR:file length does not match  ");
+        						 logPrint(ERROR,logLine);}
+
             ret = CO_ERROR_DATA_CORRUPT;
         }
         else if(CRC[0] != CRC[1]) {
             /* CRC does not match */
+           	if(LEVEL_1){
+            						 sprintf(logLine,"FILE:CO_OD_storage.C||"
+            								 "Call: CO_OD_storage_init"
+            								 "\n, ERROR:CRC does not match  ");
+            						 logPrint(ERROR,logLine);}
+
             ret = CO_ERROR_CRC;
         }
         else {
@@ -298,14 +539,45 @@ CO_ReturnError_t CO_OD_storage_autoSave(
         uint16_t                timer1ms,
         uint16_t                delay)
 {
+
+
+	if(LEVEL_1){
+				 sprintf(logLine,"FILE:CO_OD_storage.C||"
+						 "Call: CO_OD_storage_autoSave"
+						 "\n, msg:start ");
+				 logPrint(LOG,logLine);}
+
     CO_ReturnError_t ret = CO_ERROR_NO;
 
     /* verify arguments */
+    if(LEVEL_1){
+       			 sprintf(logLine,"FILE:CO_OD_storage.C||"
+       					 "Call: CO_OD_storage_autoSave"
+       					 "\n, msg:check if odStor and odAddress are null ");
+       			 logPrint(LOG,logLine);}
+
+
+
     if(odStor==NULL || odStor->odAddress==NULL) {
+
+    	if(LEVEL_1){
+    	    				 sprintf(logLine,"FILE:CO_OD_storage.C||"
+    	    						 "Call: CO_OD_storage_autoSave"
+    	    						 "\n, ERROR: Arguments are illegal");
+    	    				 logPrint(ERROR,logLine);}
+
+
         ret = CO_ERROR_ILLEGAL_ARGUMENT;
     }
 
     /* don't save file more often than delay */
+    if(LEVEL_1){
+         			 sprintf(logLine,"FILE:CO_OD_storage.C||"
+         					 "Call: CO_OD_storage_autoSave"
+         					 "\n, msg:check if last save is moe than delay ");
+         			 logPrint(LOG,logLine);}
+
+
     if(odStor->lastSavedMs < delay) {
         odStor->lastSavedMs += timer1ms - odStor->tmr1msPrev;
     }
@@ -314,17 +586,37 @@ CO_ReturnError_t CO_OD_storage_autoSave(
         bool_t saveData = false;
 
         /* allocate buffer and open file if necessary */
+        if(LEVEL_1){
+           			 sprintf(logLine,"FILE:CO_OD_storage.C||"
+           					 "Call: CO_OD_storage_autoSave"
+           					 "\n, msg:begin configure object variables and allocate buffer ");
+           			 logPrint(LOG,logLine);}
+
+
+
         if(ret == CO_ERROR_NO) {
             buf = malloc(odStor->odSize);
             if(odStor->fp == NULL) {
                 odStor->fp = fopen(odStor->filename, "r+");
             }
             if(buf == NULL || odStor->fp == NULL) {
+            	   if(LEVEL_1){
+					 sprintf(logLine,"FILE:CO_OD_storage.C||"
+							 "Call: CO_OD_storage_autoSave"
+							 "\n, ERROR:out of memory");
+					 logPrint(ERROR,logLine);}
+
                 ret = CO_ERROR_OUT_OF_MEMORY;
             }
         }
 
         /* read data from the beginning of the file */
+
+        if(LEVEL_1){
+                  			 sprintf(logLine,"FILE:CO_OD_storage.C||"
+                  					 "Call: CO_OD_storage_autoSave"
+                  					 "\n, msg:begin read data from the beginning of the file ");
+                  			 logPrint(LOG,logLine);}
         if(ret == CO_ERROR_NO) {
             uint32_t cnt = 0;
 
@@ -343,11 +635,22 @@ CO_ReturnError_t CO_OD_storage_autoSave(
             }
             else {
                 /* file length does not match */
+
+			  if(LEVEL_1){
+					 sprintf(logLine,"FILE:CO_OD_storage.C||"
+							 "Call: CO_OD_storage_autoSave"
+							 "\n, ERROR:file length does not match ");
+					 logPrint(LOG,logLine);}
                 ret = CO_ERROR_DATA_CORRUPT;
             }
         }
 
         /* Save the data to the file only if data differs. */
+        if(LEVEL_1){
+			 sprintf(logLine,"FILE:CO_OD_storage.C||"
+					 "Call: CO_OD_storage_autoSave"
+					 "\n,msg:save data to the file only if the data differs ");
+			 logPrint(LOG,logLine);}
         if(ret == CO_ERROR_NO && saveData) {
             uint16_t CRC;
 
@@ -375,6 +678,12 @@ CO_ReturnError_t CO_OD_storage_autoSave(
 }
 
 void CO_OD_storage_autoSaveClose(CO_OD_storage_t *odStor) {
+	 if(LEVEL_1){
+				 sprintf(logLine,"FILE:CO_OD_storage.C||"
+						 "Call: CO_OD_storage_autoSaveClose"
+						 "\n,msg:start ");
+				 logPrint(LOG,logLine);}
+
     if(odStor->fp != NULL) {
         fclose(odStor->fp);
     }
