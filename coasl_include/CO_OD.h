@@ -107,6 +107,9 @@
    #define CO_NO_NMT_MASTER               1
    #define CO_NO_TRACE                    0   
 
+   //karthik added
+   #define CO_NO_LSS_MASTER               1
+   //end adding
 
 /*******************************************************************************
    OBJECT DICTIONARY

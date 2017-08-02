@@ -108,7 +108,18 @@
     #define CO_RXCAN_RPDO     (CO_RXCAN_SYNC+CO_NO_SYNC)              /*  start index for RPDO messages */
     #define CO_RXCAN_SDO_SRV  (CO_RXCAN_RPDO+CO_NO_RPDO)              /*  start index for SDO server message (request) */
     #define CO_RXCAN_SDO_CLI  (CO_RXCAN_SDO_SRV+CO_NO_SDO_SERVER)     /*  start index for SDO client message (response) */
-    #define CO_RXCAN_CONS_HB  (CO_RXCAN_SDO_CLI+CO_NO_SDO_CLIENT)     /*  start index for Heartbeat Consumer messages */
+
+//karthik added
+#if CO_NO_LSS_MASTER == 1
+	#define CO_RXCAN_LSS_MASTER  (CO_RXCAN_SDO_CLI+CO_NO_SDO_CLIENT)
+    #define CO_RXCAN_CONS_HB  (CO_RXCAN_LSS_MASTER+1)     /*  start index for Heartbeat Consumer messages */
+#endif
+
+#if CO_NO_LSS_MASTER != 1
+	#define CO_RXCAN_CONS_HB  (CO_RXCAN_SDO_CLI+CO_NO_SDO_CLIENT)
+#endif
+//end adding
+
     /* total number of received CAN messages */
     #define CO_RXCAN_NO_MSGS (1+CO_NO_SYNC+CO_NO_RPDO+CO_NO_SDO_SERVER+CO_NO_SDO_CLIENT+CO_NO_HB_CONS)
 
@@ -118,7 +129,18 @@
     #define CO_TXCAN_TPDO     (CO_TXCAN_EMERG+CO_NO_EMERGENCY)        /*  start index for TPDO messages */
     #define CO_TXCAN_SDO_SRV  (CO_TXCAN_TPDO+CO_NO_TPDO)              /*  start index for SDO server message (response) */
     #define CO_TXCAN_SDO_CLI  (CO_TXCAN_SDO_SRV+CO_NO_SDO_SERVER)     /*  start index for SDO client message (request) */
-    #define CO_TXCAN_HB       (CO_TXCAN_SDO_CLI+CO_NO_SDO_CLIENT)     /*  index for Heartbeat message */
+
+//karthik added
+#if CO_NO_LSS_MASTER == 1
+	#define CO_TXCAN_LSS_MASTER   (CO_TXCAN_SDO_CLI+CO_NO_SDO_CLIENT)
+	#define CO_TXCAN_HB			  (CO_TXCAN_LSS_MASTER+1)
+#endif
+
+#if CO_NO_LSS_MASTER != 1
+	#define CO_TXCAN_HB       (CO_TXCAN_SDO_CLI+CO_NO_SDO_CLIENT)     /*  index for Heartbeat message */
+#endif
+//end adding
+
     /* total number of transmitted CAN messages */
     #define CO_TXCAN_NO_MSGS (CO_NO_NMT_MASTER+CO_NO_SYNC+CO_NO_EMERGENCY+CO_NO_TPDO+CO_NO_SDO_SERVER+CO_NO_SDO_CLIENT+1)
 
@@ -211,16 +233,17 @@ CO_ReturnError_t CO_init(
 						    	"FILE: CANopen.c"
 						    	"||CALL: CO_init"
 						    	"\nMSG: canopen init started"); logPrint(LOG,logLine);}
-	 //karthik did this
+	 //karthik added
 	   CO_SDOclientPar_t OD_SDOClientParameter[1];
 	   OD_SDOClientParameter[0].COB_IDClientToServer=0x600;
 	   OD_SDOClientParameter[0].COB_IDServerToClient=0x580;
 	   OD_SDOClientParameter[0].maxSubIndex=3;
 	   OD_SDOClientParameter[0].nodeIDOfTheSDOServer=1;
-
+     //end adding
 
     int16_t i;
     CO_ReturnError_t err;
+
 #ifndef CO_USE_GLOBALS
     uint16_t errCnt;
 #endif
@@ -326,6 +349,13 @@ CO_ReturnError_t CO_init(
       #if CO_NO_SDO_CLIENT == 1
         CO->SDOclient                       = (CO_SDOclient_t *)    calloc(1, sizeof(CO_SDOclient_t));
       #endif
+
+        //karthik added
+	  #if CO_NO_LSS_MASTER == 1
+        CO->LSSmaster                       = (CO_LSS_t *) 			calloc(1,sizeof(CO_LSS_t));
+	  #endif
+        //end adding
+
       #if CO_NO_TRACE > 0
         for(i=0; i<CO_NO_TRACE; i++) {
             CO->trace[i]                    = (CO_trace_t *)        calloc(1, sizeof(CO_trace_t));
@@ -356,7 +386,13 @@ CO_ReturnError_t CO_init(
   #if CO_NO_SDO_CLIENT == 1
                   + sizeof(CO_SDOclient_t)
   #endif
-                  + 0;
+
+  //karthik added
+  #if CO_NO_LSS_MASTER == 1
+				  + sizeof(CO_LSS_t)
+  #endif
+  //end adding
+				  + 0;
   #if CO_NO_TRACE > 0
     CO_memoryUsed += sizeof(CO_trace_t) * CO_NO_TRACE;
     for(i=0; i<CO_NO_TRACE; i++) {
@@ -387,6 +423,13 @@ CO_ReturnError_t CO_init(
   #if CO_NO_SDO_CLIENT == 1
     if(CO->SDOclient                    == NULL) errCnt++;
   #endif
+
+    //karthik added
+#if CO_NO_LSS_MASTER == 1
+    if(CO->LSSmaster					== NULL) errCnt++;
+#endif
+    //end adding
+
   #if CO_NO_TRACE > 0
     for(i=0; i<CO_NO_TRACE; i++) {
         if(CO->trace[i]                 == NULL) errCnt++;
@@ -695,6 +738,29 @@ CO_ReturnError_t CO_init(
     	CO_delete(CANbaseAddress); return err;}
 #endif
 
+//karthik added
+#if CO_NO_LSS_MASTER == 1
+    if(LEVEL_1){sprintf(logLine,
+            		"FILE: CANopen.c"
+            		"||CALL: CO_init"
+            		"\nMSG: LSS master object init started"); logPrint(LOG,logLine);}
+
+    err = CO_LSS_init(
+    		CO->LSSmaster,
+    		CO->CANmodule[0],
+			CO_RXCAN_LSS_MASTER,
+			CO->CANmodule[0],
+			CO_TXCAN_LSS_MASTER);
+
+    if(err){
+       	if(LEVEL_1){sprintf(logLine,
+       			"FILE: CANopen.c"
+       			"||CALL: CO_init"
+       			"\nMSG: SDO Client object init failed.Error code=%d",err); logPrint(ERROR,logLine);}
+       	CO_delete(CANbaseAddress); return err;}
+
+#endif
+//end adding
 
 #if CO_NO_TRACE > 0
     for(i=0; i<CO_NO_TRACE; i++) {
@@ -752,6 +818,13 @@ void CO_delete(int32_t CANbaseAddress){
   #if CO_NO_SDO_CLIENT == 1
     free(CO->SDOclient);
   #endif
+
+  //Karthik added
+  #if CO_NO_LSS_MASTER == 1
+    free(CO->LSSmaster);
+  #endif
+  //end adding
+
     free(CO_HBcons_monitoredNodes);
     free(CO->HBcons);
     for(i=0; i<CO_NO_RPDO; i++){
@@ -787,13 +860,25 @@ CO_NMT_reset_cmd_t CO_process(
 			"||CALL: CO_process"
 			"\nMSG: started"); logPrint(LOG,logLine);}
     uint8_t i;
+    bool_t NMTisStopped = false;
     bool_t NMTisPreOrOperational = false;
     CO_NMT_reset_cmd_t reset = CO_RESET_NOT;
     static uint16_t ms50 = 0;
 
     if(CO->NMT->operatingState == CO_NMT_PRE_OPERATIONAL || CO->NMT->operatingState == CO_NMT_OPERATIONAL)
+    {
         NMTisPreOrOperational = true;
-
+        //karthik added
+        NMTisStopped=false;
+        //end adding
+    }
+    //karthik added
+    else if(CO->NMT->operatingState == CO_NMT_STOPPED)
+    {
+    	NMTisPreOrOperational = false;
+    	NMTisStopped=true;
+    }
+    //end adding
     ms50 += timeDifference_ms;
     if(ms50 >= 50){
         ms50 -= 50;
@@ -836,6 +921,15 @@ CO_NMT_reset_cmd_t CO_process(
             CO->HBcons,
             NMTisPreOrOperational,
             timeDifference_ms);
+
+    //karthik added
+    CO_LSS_process(
+    		CO->LSSmaster,
+			NMTisStopped,
+			timeDifference_ms,
+			1000,
+			timerNext_ms);
+    //end adding
 
     return reset;
 }

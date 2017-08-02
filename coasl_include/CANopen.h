@@ -85,6 +85,7 @@ extern "C" {
     #include "CO_SYNC.h"
     #include "CO_PDO.h"
     #include "Logger.h"
+    #include "CO_LSS.h"
 
     #include "CO_HBconsumer.h"
 #if CO_NO_SDO_CLIENT == 1
@@ -119,7 +120,12 @@ typedef enum{
      CO_CAN_ID_RPDO_4            = 0x500,   /**< 0x500, Default RPDO5 (+nodeID) */
      CO_CAN_ID_TSDO              = 0x580,   /**< 0x580, SDO response from server (+nodeID) */
      CO_CAN_ID_RSDO              = 0x600,   /**< 0x600, SDO request from client (+nodeID) */
-     CO_CAN_ID_HEARTBEAT         = 0x700    /**< 0x700, Heartbeat message */
+     CO_CAN_ID_HEARTBEAT         = 0x700,    /**< 0x700, Heartbeat message */
+
+	 //karthik added
+	 CO_CAN_ID_LSS_MASTER		 = 0x7E5,
+     CO_CAN_ID_LSS_SLAVE         = 0x7E4
+	 //end adding
 }CO_Default_CAN_ID_t;
 
 
@@ -140,6 +146,11 @@ typedef struct{
 #if CO_NO_SDO_CLIENT == 1
     CO_SDOclient_t     *SDOclient;      /**< SDO client object */
 #endif
+//karthik added
+#if CO_NO_LSS_MASTER == 1
+    CO_LSS_t   *LSSmaster;
+#endif
+//end adding
 #if CO_NO_TRACE > 0
     CO_trace_t         *trace[CO_NO_TRACE]; /**< Trace object for monitoring variables */
 #endif
